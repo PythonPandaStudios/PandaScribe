@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from pathlib import Path
 from markitdown import MarkItDown
 from tqdm import tqdm
@@ -8,22 +9,11 @@ from tqdm import tqdm
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 def convert_library_to_markdown(input_dir: str, output_dir: str) -> None:
-    """
-    Scans a directory for PDFs and converts them to high-fidelity Markdown.
-    Includes a progress bar for visual feedback during batch processing.
-
-    Args:
-        input_dir (str): The local directory containing PDFs/Docs to convert.
-        output_dir (str): The local directory where Markdown files will be saved.
-    """
     md_converter = MarkItDown()
     input_path = Path(input_dir)
     output_base = Path(output_dir)
-
-    # Supported extensions for conversion
     extensions: set[str] = {'.pdf', '.docx', '.pptx'}
 
-    # 1. Collect all matching files first to establish total count for progress bar
     files_to_process: list[Path] = [
         f for f in input_path.rglob('*') if f.suffix.lower() in extensions
     ]
@@ -32,31 +22,34 @@ def convert_library_to_markdown(input_dir: str, output_dir: str) -> None:
         print(f"⚠️ No matching documents found in: {input_path}")
         return
 
-    print(f"🚀 PandaScribe starting conversion: {input_path} ({len(files_to_process)} files)")
+    print(f"🚀 PandaScribe starting batch conversion...")
 
-    # 2. Iterate through files with a tqdm progress bar
-    for file in tqdm(files_to_process, desc="🔄 Converting Docs", unit="file"):
-        relative_path: Path = file.relative_to(input_path)
-        target_file: Path = output_base / relative_path.with_suffix('.md')
-        
-        # Ensure the sub-directory exists in the output folder
-        target_file.parent.mkdir(parents=True, exist_ok=True)
+    # Main progress bar for the overall task
+    with tqdm(total=len(files_to_process), desc="📊 Total Progress", unit="file", colour="green") as pbar:
+        for file in files_to_process:
+            # Update description so the user knows WHICH file is being processed
+            pbar.set_description(f"🔄 Converting: {file.name[:30]}...")
+            
+            relative_path: Path = file.relative_to(input_path)
+            target_file: Path = output_base / relative_path.with_suffix('.md')
+            target_file.parent.mkdir(parents=True, exist_ok=True)
 
-        try:
-            # Perform the conversion
-            result = md_converter.convert(str(file))
-            
-            with open(target_file, "w", encoding="utf-8") as f:
-                f.write(result.text_content)
-            
-            # Use tqdm.write to prevent print statements from breaking the progress bar
-            tqdm.write(f"✅ Processed: {file.name}")
-        except Exception as e:
-            tqdm.write(f"❌ Critical error converting {file.name}: {e}")
+            try:
+                # The "thinking" happens here
+                result = md_converter.convert(str(file))
+                
+                with open(target_file, "w", encoding="utf-8") as f:
+                    f.write(result.text_content)
+                
+                # Update total bar once file is complete
+                pbar.update(1)
+                tqdm.write(f"✅ Success: {file.name}")
+                
+            except Exception as e:
+                tqdm.write(f"❌ Error in {file.name}: {e}")
+                pbar.update(1) # Still move the bar forward even on failure
 
 if __name__ == "__main__":
-    # Update these to your local paths as needed
     PDF_VAULT: str = "./books_pdf"
     MD_OUTPUT: str = "./reference/books_markdown"
-    
     convert_library_to_markdown(PDF_VAULT, MD_OUTPUT)
