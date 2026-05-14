@@ -1,0 +1,9 @@
+# Ignore the entire reference library by default
+/reference/books_markdown/*
+
+# ALWAYS ignore extracted image assets to save tokens
+/reference/books_markdown/*_assets/*
+
+# EXCEPT the specific books needed for the current sprint
+!/reference/books_markdown/begintocodewithpython.md
+!/reference/books_markdown/django_mastery_v6.md
