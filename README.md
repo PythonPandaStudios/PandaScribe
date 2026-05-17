@@ -22,7 +22,7 @@ choco install ffmpeg
 
 ### 2. Setup Environment & Dependencies
 # Clone the repository
-git clone https://github.com/JeffreyPadfield/PandaScribe.git
+git clone https://github.com/PythonPandaStudios/PandaScribe.git
 cd PandaScribe
 
 # Set up a virtual environment
